@@ -1,0 +1,385 @@
+# カフェ売上モックデータ生成設定
+data_generation:
+  # データ生成期間
+  start_date: "2023-01-01"
+  end_date: "2024-12-31"
+
+  # 営業時間
+  business_hours:
+    open: 9
+    close: 18
+
+  # 基本設定
+  base_customers_per_hour: 8 # 1時間あたりの平均来客数
+
+  # 曜日別係数 (月曜=0, 日曜=6)
+  0: 0.8 # 月曜
+  1: 0.9 # 火曜
+  2: 1.0 # 水曜
+  3: 0.0 # 木曜は定休日
+  4: 1.0 # 金曜
+  5: 1.2 # 土曜
+  6: 1.3 # 日曜
+
+  # 時間帯別係数
+  hour_multiplier:
+    9: 0.7 # 朝
+    10: 1.0
+    11: 1.2
+    12: 1.5 # ランチピーク
+    13: 1.4
+    14: 1.1
+    15: 1.3 # カフェタイム
+    16: 1.2
+    17: 0.9 # 夕方
+
+  # 天気による影響
+  weather_multiplier:
+    sunny: 1.2
+    cloudy: 1.0
+    rainy: 0.7
+    snowy: 0.5
+
+  # 月別季節による影響
+  seasonal_multiplier:
+    1: 0.8 # 1月
+    2: 0.9 # 2月
+    3: 1.1 # 3月
+    4: 1.2 # 4月
+    5: 1.1 # 5月
+    6: 1.0 # 6月
+    7: 1.3 # 7月(夏休み)
+    8: 1.3 # 8月(夏休み)
+    9: 1.1 # 9月
+    10: 1.2 # 10月
+    11: 1.0 # 11月
+    12: 1.3 # 12月(年末)
+
+  # 特別イベントを設定
+  special_events:
+    - date: "2023-12-24"
+      multiplier: 1.5 # クリスマス
+    - date: "2023-02-14"
+      multiplier: 1.3 # バレンタインデー
+    - date: "2023-04-23"
+      multiplier: 1.7 # 創業記念日
+
+# メニュー設定
+menu:
+  morning_sets:
+    - name: "モーニングA"
+      price: 600
+      category: "モーニング"
+      available_hours: [9, 10, 11]
+      popularity: 0.3
+    - name: "モーニングB"
+      price: 700
+      category: "モーニング"
+      available_hours: [9, 10, 11]
+      popularity: 0.25
+    - name: "モーニングC"
+      price: 600
+      category: "モーニング"
+      available_hours: [9, 10, 11]
+      popularity: 0.2
+    - name: "モーニングD"
+      price: 600
+      category: "モーニング"
+      available_hours: [9, 10, 11]
+      popularity: 0.25
+
+  lunch_sets:
+    - name: "ランチA"
+      price: 900
+      category: "ランチ"
+      available_hours: [11, 12, 13, 14]
+      popularity: 0.35
+    - name: "ランチB"
+      price: 950
+      category: "ランチ"
+      available_hours: [11, 12, 13, 14]
+      popularity: 0.35
+    - name: "ランチC"
+      price: 950
+      category: "ランチ"
+      available_hours: [11, 12, 13, 14]
+      popularity: 0.3
+
+  light_meals:
+    - name: "ナポリタン"
+      price: 850
+      category: "軽食"
+      available_hours: [11, 12, 13, 14, 15, 16]
+      popularity: 0.2
+    - name: "ミートソース"
+      price: 850
+      category: "軽食"
+      available_hours: [11, 12, 13, 14, 15, 16]
+      popularity: 0.22
+    - name: "カルボナーラ"
+      price: 850
+      category: "軽食"
+      available_hours: [11, 12, 13, 14, 15, 16]
+      popularity: 0.18
+    - name: "焼きそば"
+      price: 750
+      category: "軽食"
+      available_hours: [11, 12, 13, 14, 15, 16]
+      popularity: 0.15
+    - name: "カレーライス"
+      price: 750
+      category: "軽食"
+      available_hours: [11, 12, 13, 14, 15, 16]
+      popularity: 0.25
+
+  drinks:
+    - name: "ホットコーヒー"
+      price: 400
+      category: "ドリンク"
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity: 0.4
+      seasonal_preference: "winter"
+    - name: "アイスコーヒー"
+      price: 400
+      category: "ドリンク"
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity: 0.3
+      seasonal_preference: "summer"
+    - name: "ホットティー"
+      price: 400
+      category: "ドリンク"
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity: 0.15
+      seasonal_preference: "winter"
+    - name: "アイスティー"
+      price: 400
+      category: "ドリンク"
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity: 0.15
+      seasonal_preference: "summer"
+
+  sweets:
+    - name: "ケーキセット"
+      price: 700
+      category: "スイーツ"
+      available_hours: [13, 14, 15, 16, 17]
+      popularity: 0.4
+    - name: "2色アイス"
+      price: 400
+      category: "スイーツ"
+      available_hours: [13, 14, 15, 16, 17]
+      popularity: 0.3
+      seasonal_preference: "summer"
+    - name: "プリン・アラモード"
+      price: 800
+      category: "スイーツ"
+      available_hours: [13, 14, 15, 16, 17]
+      popularity: 0.3
+
+# データ品質設定(学習用に意図的にノイズを発生させる)
+data_quality:
+  missing_data_rate: 0.02 # 2%の欠損値
+  outlier_rate: 0.01 # 1%の異常値
+  duplicate_rate: 0.005 # 0.5%の重複データ
+
+# 顧客属性設定
+customer_demographics:
+  # 年齢グループ分布
+  age_groups:
+    teens:
+      range: [13, 19]
+      ratio: 0.15
+    twenties:
+      range: [20, 29]
+      ratio: 0.35
+    thirties:
+      range: [30, 39]
+      ratio: 0.25
+    forties:
+      range: [40, 49]
+      ratio: 0.15
+    seniors:
+      range: [50, 80]
+      ratio: 0.10
+
+  # 基本性別分布
+  base_gender_ratio:
+    male: 0.45
+    female: 0.55
+
+  # 時間帯・曜日別の顧客属性パターン
+  customer_patterns:
+    # 平日モーニング (9-11時): ビジネスマン中心
+    weekday_morning:
+      conditions:
+        day_type: "weekday"
+        hours: [9, 10, 11]
+      customer_demographics:
+        gender_ratio:
+          male: 0.70
+          female: 0.30
+        age_preference:
+          twenties: 0.25
+          thirties: 0.40
+          forties: 0.25
+          seniors: 0.10
+
+    # 平日ランチ (12-14時): オフィスワーカー
+    weekday_lunch:
+      conditions:
+        day_type: "weekday"
+        hours: [12, 13, 14]
+      customer_demographics:
+        gender_ratio:
+          male: 0.55
+          female: 0.45
+        age_preference:
+          twenties: 0.35
+          thirties: 0.35
+          forties: 0.20
+          seniors: 0.10
+
+    # 平日ティータイム (15-17時): 若い女性中心
+    weekday_teatime:
+      conditions:
+        day_type: "weekday"
+        hours: [15, 16, 17]
+      customer_demographics:
+        gender_ratio:
+          male: 0.25
+          female: 0.75
+        age_preference:
+          teens: 0.20
+          twenties: 0.45
+          thirties: 0.25
+          forties: 0.10
+
+    # 休日朝 (9-11時): 家族づれ・カップル
+    weekend_morning:
+      conditions:
+        day_type: "weekend"
+        hours: [9, 10, 11]
+      customer_demographics:
+        gender_ratio:
+          male: 0.50
+          female: 0.50
+        age_preference:
+          twenties: 0.30
+          thirties: 0.30
+          forties: 0.25
+          seniors: 0.10
+
+    # 休日ランチ (12-14時): 家族・友人グループ
+    weekend_lunch:
+      conditions:
+        day_type: "weekend"
+        hours: [12, 13, 14]
+      customer_demographics:
+        gender_ratio:
+          male: 0.45
+          female: 0.55
+        age_preference:
+          teens: 0.20
+          twenties: 0.30
+          thirties: 0.25
+          forties: 0.15
+          seniors: 0.10
+
+    # 休日ランチ (12-14時): 家族・友人グループ
+    weekend_teatime:
+      conditions:
+        day_type: "weekend"
+        hours: [15, 16, 17]
+      customer_demographics:
+        gender_ratio:
+          male: 0.35
+          female: 0.65
+        age_preference:
+          teens: 0.25
+          twenties: 0.30
+          thirties: 0.25
+          forties: 0.15
+          seniors: 0.05
+
+  # 年齢・性別によるメニューの好み
+  menu_preferences:
+    # 男性の好み
+    male:
+      teens:
+        モーニング: 1.0
+        ランチ: 1.0
+        軽食: 1.3
+        ドリンク: 1.3
+        スイーツ: 0.7
+      twenties:
+        モーニング: 1.2
+        ランチ: 1.3
+        軽食: 1.1
+        ドリンク: 1.0
+        スイーツ: 0.5
+      thirties:
+        モーニング: 1.4
+        ランチ: 1.2
+        軽食: 1.0
+        ドリンク: 1.1
+        スイーツ: 0.7
+      forties:
+        モーニング: 1.3
+        ランチ: 1.1
+        軽食: 0.9
+        ドリンク: 1.2
+        スイーツ: 0.8
+      fifties:
+        モーニング: 1.3
+        ランチ: 1.3
+        軽食: 1.1
+        ドリンク: 1.4
+        スイーツ: 0.7
+      seniors:
+        モーニング: 1.1
+        ランチ: 1.0
+        軽食: 0.8
+        ドリンク: 1.3
+        スイーツ: 0.9
+    # 女性の好み
+    female:
+      teens:
+        モーニング: 0.8
+        ランチ: 1.0
+        軽食: 1.1
+        ドリンク: 1.2
+        スイーツ: 1.6
+      twenties:
+        モーニング: 0.9
+        ランチ: 1.1
+        軽食: 1.0
+        ドリンク: 1.3
+        スイーツ: 1.5
+      thirties:
+        モーニング: 1.0
+        ランチ: 1.0
+        軽食: 0.9
+        ドリンク: 1.2
+        スイーツ: 1.3
+      forties:
+        モーニング: 1.3
+        ランチ: 1.1
+        軽食: 0.9
+        ドリンク: 1.2
+        スイーツ: 0.8
+      fifties:
+        モーニング: 1.1
+        ランチ: 0.9
+        軽食: 0.8
+        ドリンク: 1.3
+        スイーツ: 1.2
+      seniors:
+        モーニング: 1.0
+        ランチ: 0.8
+        軽食: 0.7
+        ドリンク: 1.4
+        スイーツ: 1.1
+
+# 出力設定
+output:
+  encoding: "utf-8"
