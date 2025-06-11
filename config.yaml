@@ -1,15 +1,57 @@
-# カフェ売上モックデータ生成設定
+# カフェ売上モックデータ生成設定 (RDB対応版)
+
+# データベース設定
+database:
+  # 開発・本番環境での切り替え
+  default_engine: "sqlite" # sqlite, postgresql, mysql
+  connections:
+    sqlite:
+      path: "data/cafe_mock_sales.db"
+    postgresql:
+      host: "localhost"
+      port: 5432
+      database: "cafe_mock_sales"
+      # 実際の接続情報は環境変数から取得
+    mysql:
+      host: "localhost"
+      port: 3306
+      database: "cafe_mock_sales"
+
+# 出力設定 (複数形式対応)
+output:
+  formats: ["csv", "json", "xlsx", "db"] # 出力したい形式を指定
+  encoding: "utf-8"
+  file_paths:
+    csv_dir: "data/csv/"
+    json_dir: "data/json/"
+    xlsx_dir: "data/xlsx/"
+  # テーブル設計に対応したファイル分割
+  table_structure:
+    customers: true # 顧客テーブル
+    orders: true # 注文テーブル
+    order_items: true # 注文詳細テーブル
+    menu_items: true # メニューテーブル
+    daily_summary: true # 日時集計テーブル
+
+# データ生成設定
 data_generation:
   # データ生成期間
   start_date: "2023-01-01"
   end_date: "2024-12-31"
 
+  # 正規化に対応したID生成設定
+  id_generation:
+    customer_id_start: 1000
+    order_id_start: 10000
+    menu_id_start: 100
+
   # 営業時間
   business_hours:
     open: 9
     close: 18
+    closed_days: [3] # 木曜定休日
 
-  # 基本設定
+  # トラフィック設定
   base_customers_per_hour: 8 # 1時間あたりの平均来客数
 
   # 曜日別係数 (月曜=0, 日曜=6)
@@ -64,246 +106,316 @@ data_generation:
     - date: "2023-04-23"
       multiplier: 1.7 # 創業記念日
 
-# メニュー設定
+# 正規化に対応したメニュー設定
 menu:
-  morning_sets:
-    - name: "モーニングA"
-      price: 600
-      category: "モーニング"
-      available_hours: [9, 10, 11]
-      popularity: 0.3
-    - name: "モーニングB"
-      price: 700
-      category: "モーニング"
-      available_hours: [9, 10, 11]
-      popularity: 0.25
-    - name: "モーニングC"
-      price: 600
-      category: "モーニング"
-      available_hours: [9, 10, 11]
-      popularity: 0.2
-    - name: "モーニングD"
-      price: 600
-      category: "モーニング"
-      available_hours: [9, 10, 11]
-      popularity: 0.25
+  categories:
+    - id: 1
+      name: "モーニング"
+      description: "朝のセットメニュー"
+    - id: 2
+      name: "ランチ"
+      description: "昼のセットメニュー"
+    - id: 3
+      name: "軽食"
+      description: "軽い食事"
+    - id: 4
+      name: "ドリンク"
+      description: "飲み物"
+    - id: 1
+      name: "スイーツ"
+      description: "デザート・甘味"
 
-  lunch_sets:
-    - name: "ランチA"
+  items:
+    # モーニングセット
+    - id: 101
+      name: "モーニングA"
+      category_id: 1
+      price: 600
+      cost: 250
+      available_hours: [9, 10, 11]
+      popularity_weight: 0.3
+      is_seasonal: false
+
+    - id: 102
+      name: "モーニングB"
+      category_id: 1
+      price: 700
+      cost: 280
+      available_hours: [9, 10, 11]
+      popularity_weight: 0.25
+      is_seasonal: false
+
+    - id: 103
+      name: "モーニングC"
+      category_id: 1
+      price: 600
+      cost: 250
+      available_hours: [9, 10, 11]
+      popularity_weight: 0.2
+      is_seasonal: false
+
+    - id: 104
+      name: "モーニングD"
+      category_id: 1
+      price: 650
+      cost: 270
+      available_hours: [9, 10, 11]
+      popularity_weight: 0.25
+      is_seasonal: false
+
+    # ランチセット
+    - id: 201
+      name: "ランチA"
+      category_id: 2
       price: 900
-      category: "ランチ"
+      cost: 400
       available_hours: [11, 12, 13, 14]
-      popularity: 0.35
-    - name: "ランチB"
+      popularity_weight: 0.35
+      is_seasonal: false
+
+    - id: 202
+      name: "ランチB"
+      category_id: 2
       price: 950
-      category: "ランチ"
+      cost: 420
       available_hours: [11, 12, 13, 14]
-      popularity: 0.35
-    - name: "ランチC"
+      popularity_weight: 0.35
+      is_seasonal: false
+
+    - id: 203
+      name: "ランチB"
+      category_id: 2
       price: 950
-      category: "ランチ"
+      cost: 430
       available_hours: [11, 12, 13, 14]
-      popularity: 0.3
+      popularity_weight: 0.3
+      is_seasonal: false
 
-  light_meals:
-    - name: "ナポリタン"
+    # 軽食
+
+    - id: 301
+      name: "ナポリタン"
+      category_id: 3
       price: 850
-      category: "軽食"
+      cost: 320
       available_hours: [11, 12, 13, 14, 15, 16]
-      popularity: 0.2
-    - name: "ミートソース"
+      popularity_weight: 0.2
+      is_seasonal: false
+
+    - id: 302
+      name: "ミートソース"
+      category_id: 3
       price: 850
-      category: "軽食"
+      cost: 340
       available_hours: [11, 12, 13, 14, 15, 16]
-      popularity: 0.22
-    - name: "カルボナーラ"
+      popularity_weight: 0.22
+      is_seasonal: false
+
+    - id: 303
+      name: "カルボナーラ"
+      category_id: 3
       price: 850
-      category: "軽食"
+      cost: 360
       available_hours: [11, 12, 13, 14, 15, 16]
-      popularity: 0.18
-    - name: "焼きそば"
+      popularity_weight: 0.18
+      is_seasonal: false
+
+    - id: 304
+      name: "焼きそば"
+      category_id: 3
       price: 750
-      category: "軽食"
+      cost: 280
       available_hours: [11, 12, 13, 14, 15, 16]
-      popularity: 0.15
-    - name: "カレーライス"
+      popularity_weight: 0.15
+      is_seasonal: false
+
+    - id: 305
+      name: "カレーライス"
+      category_id: 3
       price: 750
-      category: "軽食"
+      cost: 300
       available_hours: [11, 12, 13, 14, 15, 16]
-      popularity: 0.25
+      popularity_weight: 0.25
+      is_seasonal: false
 
-  drinks:
-    - name: "ホットコーヒー"
+    # ドリンク
+    - id: 401
+      name: "ホットコーヒー"
+      category_id: 4
       price: 400
-      category: "ドリンク"
+      cost: 80
       available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-      popularity: 0.4
+      popularity_weight: 0.4
+      is_seasonal: true
       seasonal_preference: "winter"
-    - name: "アイスコーヒー"
-      price: 400
-      category: "ドリンク"
-      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-      popularity: 0.3
-      seasonal_preference: "summer"
-    - name: "ホットティー"
-      price: 400
-      category: "ドリンク"
-      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-      popularity: 0.15
-      seasonal_preference: "winter"
-    - name: "アイスティー"
-      price: 400
-      category: "ドリンク"
-      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-      popularity: 0.15
-      seasonal_preference: "summer"
+      seasonal_multiplier: 1.3
 
-  sweets:
-    - name: "ケーキセット"
+    - id: 402
+      name: "アイスコーヒー"
+      category_id: 4
+      price: 400
+      cost: 90
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity_weight: 0.3
+      is_seasonal: true
+      seasonal_preference: "summer"
+      seasonal_multiplier: 1.5
+
+    - id: 403
+      name: "ホットティー"
+      category_id: 4
+      price: 400
+      cost: 70
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity_weight: 0.15
+      is_seasonal: true
+      seasonal_preference: "winter"
+      seasonal_multiplier: 1.2
+
+    - id: 404
+      name: "アイスティー"
+      category_id: 4
+      price: 400
+      cost: 80
+      available_hours: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      popularity_weight: 0.15
+      is_seasonal: true
+      seasonal_preference: "summer"
+      seasonal_multiplier: 1.4
+
+    # スイーツ
+    - id: 501
+      name: "ケーキセット"
+      category_id: 5
       price: 700
-      category: "スイーツ"
+      cost: 280
       available_hours: [13, 14, 15, 16, 17]
-      popularity: 0.4
-    - name: "2色アイス"
+      popularity_weight: 0.4
+      is_seasonal: false
+
+    - id: 502
+      name: "2色アイス"
+      category_id: 5
       price: 400
-      category: "スイーツ"
+      cost: 120
       available_hours: [13, 14, 15, 16, 17]
-      popularity: 0.3
+      popularity_weight: 0.3
+      is_seasonal: true
       seasonal_preference: "summer"
-    - name: "プリン・アラモード"
+      seasonal_multiplier: 2.0
+
+    - id: 503
+      name: "プリン・アラモード"
+      category_id: 5
       price: 800
-      category: "スイーツ"
+      cost: 300
       available_hours: [13, 14, 15, 16, 17]
-      popularity: 0.3
+      popularity_weight: 0.3
+      is_seasonal: false
 
-# データ品質設定(学習用に意図的にノイズを発生させる)
-data_quality:
-  missing_data_rate: 0.02 # 2%の欠損値
-  outlier_rate: 0.01 # 1%の異常値
-  duplicate_rate: 0.005 # 0.5%の重複データ
-
-# 顧客属性設定
-customer_demographics:
-  # 年齢グループ分布
+# 顧客設定 (正規化対応)
+customers:
+  # 年齢層マスター
   age_groups:
-    teens:
-      range: [13, 19]
-      ratio: 0.15
-    twenties:
-      range: [20, 29]
-      ratio: 0.35
-    thirties:
-      range: [30, 39]
-      ratio: 0.25
-    forties:
-      range: [40, 49]
-      ratio: 0.15
-    seniors:
-      range: [50, 80]
-      ratio: 0.10
+    - id: 1
+      name: "teens"
+      min_age: 13
+      max_age: 19
+      base_ratio: 0.15
+    - id: 2
+      name: "twenties"
+      min_age: 20
+      max_age: 29
+      base_ratio: 0.35
+    - id: 3
+      name: "thirties"
+      min_age: 30
+      max_age: 39
+      base_ratio: 0.25
+    - id: 4
+      name: "forties"
+      min_age: 40
+      max_age: 49
+      base_ratio: 0.15
+    - id: 5
+      name: "seniors"
+      min_age: 50
+      max_age: 80
+      base_ratio: 0.10
 
   # 基本性別分布
-  base_gender_ratio:
+  gender_distribution:
     male: 0.45
     female: 0.55
 
-  # 時間帯・曜日別の顧客属性パターン
-  customer_patterns:
-    # 平日モーニング (9-11時): ビジネスマン中心
-    weekday_morning:
+  # 時間帯・曜日パターン
+  behavioral_patterns:
+    - pattern_id: 1
+      name: "平日モーニング"
       conditions:
-        day_type: "weekday"
+        day_types: ["weekday"]
         hours: [9, 10, 11]
-      customer_demographics:
+      demographics:
         gender_ratio:
           male: 0.70
           female: 0.30
-        age_preference:
+        age_distribution:
+          teens: 0.05
           twenties: 0.25
           thirties: 0.40
           forties: 0.25
-          seniors: 0.10
+          seniors: 0.05
 
-    # 平日ランチ (12-14時): オフィスワーカー
-    weekday_lunch:
+    - pattern_id: 2
+      name: "平日ランチ"
       conditions:
-        day_type: "weekday"
+        day_types: ["weekday"]
         hours: [12, 13, 14]
-      customer_demographics:
+      demographics:
         gender_ratio:
           male: 0.55
           female: 0.45
-        age_preference:
+        age_distribution:
+          teens: 0.05
           twenties: 0.35
           thirties: 0.35
           forties: 0.20
-          seniors: 0.10
+          seniors: 0.05
 
-    # 平日ティータイム (15-17時): 若い女性中心
-    weekday_teatime:
+    - pattern_id: 3
+      name: "平日ティータイム"
       conditions:
-        day_type: "weekday"
+        day_types: ["weekday"]
         hours: [15, 16, 17]
-      customer_demographics:
+      demographics:
         gender_ratio:
           male: 0.25
           female: 0.75
-        age_preference:
+        age_distribution:
           teens: 0.20
           twenties: 0.45
           thirties: 0.25
           forties: 0.10
+          seniors: 0.00
 
-    # 休日朝 (9-11時): 家族づれ・カップル
-    weekend_morning:
+    - pattern_id: 4
+      name: "休日全時間帯"
       conditions:
-        day_type: "weekend"
-        hours: [9, 10, 11]
-      customer_demographics:
-        gender_ratio:
-          male: 0.50
-          female: 0.50
-        age_preference:
-          twenties: 0.30
-          thirties: 0.30
-          forties: 0.25
-          seniors: 0.10
-
-    # 休日ランチ (12-14時): 家族・友人グループ
-    weekend_lunch:
-      conditions:
-        day_type: "weekend"
-        hours: [12, 13, 14]
-      customer_demographics:
+        day_types: ["weekend"]
+        hours: [9, 10, 11, 12, 13, 14, 15, 16, 17]
+      demographics:
         gender_ratio:
           male: 0.45
           female: 0.55
-        age_preference:
+        age_distribution:
           teens: 0.20
           twenties: 0.30
           thirties: 0.25
           forties: 0.15
           seniors: 0.10
 
-    # 休日ランチ (12-14時): 家族・友人グループ
-    weekend_teatime:
-      conditions:
-        day_type: "weekend"
-        hours: [15, 16, 17]
-      customer_demographics:
-        gender_ratio:
-          male: 0.35
-          female: 0.65
-        age_preference:
-          teens: 0.25
-          twenties: 0.30
-          thirties: 0.25
-          forties: 0.15
-          seniors: 0.05
-
-  # 年齢・性別によるメニューの好み
-  menu_preferences:
-    # 男性の好み
+  # 顧客セグメント別嗜好
+  preferences:
     male:
       teens:
         モーニング: 1.0
@@ -329,19 +441,12 @@ customer_demographics:
         軽食: 0.9
         ドリンク: 1.2
         スイーツ: 0.8
-      fifties:
-        モーニング: 1.3
-        ランチ: 1.3
-        軽食: 1.1
-        ドリンク: 1.4
-        スイーツ: 0.7
       seniors:
         モーニング: 1.1
         ランチ: 1.0
         軽食: 0.8
         ドリンク: 1.3
         スイーツ: 0.9
-    # 女性の好み
     female:
       teens:
         モーニング: 0.8
@@ -367,12 +472,6 @@ customer_demographics:
         軽食: 0.9
         ドリンク: 1.2
         スイーツ: 0.8
-      fifties:
-        モーニング: 1.1
-        ランチ: 0.9
-        軽食: 0.8
-        ドリンク: 1.3
-        スイーツ: 1.2
       seniors:
         モーニング: 1.0
         ランチ: 0.8
@@ -380,6 +479,43 @@ customer_demographics:
         ドリンク: 1.4
         スイーツ: 1.1
 
-# 出力設定
-output:
-  encoding: "utf-8"
+# データ品質設定(学習用に意図的にノイズを発生させる)
+data_quality:
+  noise_injection:
+    missing_data_rate: 0.02 # 2%の欠損値
+    outlier_rate: 0.01 # 1%の異常値
+    duplicate_rate: 0.005 # 0.5%の重複データ
+
+  # リアリティを高める設定
+  realistic_patterns:
+    enable_customer_loyalty: true # 常連客パターン
+    enable_seasonal_menu_changes: true # 季節メニュー変更
+    enable_price_changes: true # 価格変更履歴
+    enable_staff_shifts: true # スタッフシフトの影響
+
+# 機械学習用特徴量設定
+ml_features:
+  # 時系列特徴量
+  temporal_features:
+    - hour_of_day
+    - day_of_week
+    - month_of_year
+    - is_weekend
+    - is_holiday
+    - season
+
+  # ビジネス特徴量
+  business_features:
+    - weather_condition
+    - temperature
+    - customer_count_previous_hour
+    - running_average_sales
+    - day_since_last_event
+
+  # 顧客特徴量
+  customer_features:
+    - age_group
+    - gender
+    - visit_frequency
+    - average_order_value
+    - preferred_category
