@@ -121,7 +121,7 @@ menu:
     - id: 4
       name: "ドリンク"
       description: "飲み物"
-    - id: 1
+    - id: 5
       name: "スイーツ"
       description: "デザート・甘味"
 
