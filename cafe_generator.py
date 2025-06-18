@@ -519,6 +519,7 @@ class CafeDataGenerator:
         csv_dir = self.config["output"]["file_paths"]["csv_dir"]
         encoding = self.config["output"]["encoding"]
 
+        # 基本テーブルの出力
         tables = {
             "customers": self.data.customers,
             "categories": self.data.categories,
@@ -532,6 +533,156 @@ class CafeDataGenerator:
             file_path = os.path.join(csv_dir, f"{table_name}.csv")
             df.to_csv(file_path, index=False, encoding=encoding)
             logger.info(f"CSV出力完了: {file_path}")
+
+        # 学習者向け拡張データの生成と出力
+        self._export_enhanced_analysis_files(csv_dir, encoding)
+
+    def _export_enhanced_analysis_files(self, csv_dir: str, encoding: str):
+        """学習者向け分析用データファイルの出力"""
+
+        # 1. 注文詳細と商品名を結合したデータ
+        order_items_with_names = self.data.order_items.merge(
+            self.data.menu_items[["menu_id", "item_name", "category_id"]], on="menu_id"
+        ).merge(
+            self.data.categories[["category_id", "category_name"]],
+            on="category_id",
+        )
+
+        # 日本語列名を追加
+        order_items_analysis = order_items_with_names.copy()
+        order_items_analysis.columns = [
+            "注文ID",
+            "メニューID",
+            "数量",
+            "単価",
+            "小計",
+            "作成日時",
+            "商品名",
+            "カテゴリID",
+            "カテゴリ名",
+        ]
+
+        file_path = os.path.join(csv_dir, "order_items_analysis.csv")
+        order_items_analysis.to_csv(file_path, index=False, encoding=encoding)
+        logger.info(f"分析用注文詳細CSV出力完了: {file_path}")
+
+        # 2. 注文と顧客情報を結合したデータ
+        orders_with_customer = self.data.orders.merge(
+            self.data.customers[["customer_id", "age", "age_group", "gender", "visit_frequency"]],
+            on="customer_id",
+        )
+
+        # 日本語列名を追加
+        orders_analysis = orders_with_customer.copy()
+        orders_analysis.columns = [
+            "注文ID",
+            "顧客ID",
+            "注文日時",
+            "天気",
+            "気温",
+            "週末フラグ",
+            "作成日時",
+            "年齢",
+            "年齢層",
+            "性別",
+            "来店頻度",
+        ]
+
+        file_path = os.path.join(csv_dir, "orders_analysis.csv")
+        orders_analysis.to_csv(file_path, index=False, encoding=encoding)
+        logger.info(f"分析用注文CSV出力完了: {file_path}")
+
+        # 3. 商品別売上集計
+        item_sales_summary = self._create_item_sales_summary()
+        file_path = os.path.join(csv_dir, "item_sales_summary.csv")
+        item_sales_summary.to_csv(file_path, index=False, encoding=encoding)
+        logger.info(f"商品別売上集計CSV出力完了: {file_path}")
+
+        # 4. 顧客別購入履歴集計
+        customer_purchase_summary = self._create_customer_purchase_summary()
+        file_path = os.path.join(csv_dir, "customer_purchase_summary.csv")
+        customer_purchase_summary.to_csv(file_path, index=False, encoding=encoding)
+        logger.info(f"顧客別購入履歴CSV出力完了: {file_path}")
+
+    def _create_item_sales_summary(self) -> pd.DataFrame:
+        """商品別売上集計データの作成"""
+        # 注文詳細と商品マスターを統合
+        merged_data = self.data.order_items.merge(
+            self.data.menu_items[["menu_id", "item_name", "category_id", "cast"]],
+            on="menu_id",
+        ).merge(
+            self.data.categories[["category_id", "category_name"]],
+            on="category_id",
+        )
+
+        # 商品別集計
+        item_summary = (
+            merged_data.groupby(["menu_id", "item_name", "category_name"])
+            .agg({"quantity": "sum", "subtotal": "sum", "order_id": "nunique", "unit_price": "first", "cost": "first"})
+            .reset_index()
+        )
+
+        # 利益計算
+        item_summary["total_profit"] = (item_summary["unit_price"] - item_summary["cost"]) * item_summary["quantity"]
+        item_summary["profit_margin"] = (item_summary["unit_price"] - item_summary["cost"]) / item_summary["unit_price"]
+
+        # 日本語列名
+        item_summary.columns = [
+            "メニューID",
+            "商品名",
+            "カテゴリ名",
+            "販売数量",
+            "売上金額",
+            "注文回数",
+            "単価",
+            "原価",
+            "利益合計",
+            "利益率",
+        ]
+
+        return item_summary.sort_values("売上金額", ascending=False)
+
+    def _create_customer_purchase_summary(self) -> pd.DataFrame:
+        """顧客別購入履歴集計データの作成"""
+        # 注文と顧客マスターを結合
+        merged_data = self.data.orders.merge(
+            self.data.customers[["customer_id", "age_group", "gender", "visit_frequency"]], on="customer_id"
+        )
+
+        # 顧客別集計
+        customer_summary = (
+            merged_data.groupby(["customer_id", "age_group", "gender", "visit_frequency"])
+            .agg({"order_id": "count", "total_amount": ["sum", "mean"], "order_datetime": ["min", "max"]})
+            .reset_index()
+        )
+
+        # カラム名をフラット化
+        customer_summary.columns = [
+            "customer_id",
+            "age_group",
+            "gender",
+            "visit_frequency",
+            "total_orders",
+            "total_spent",
+            "avg_order_value",
+            "first_order",
+            "last_order",
+        ]
+
+        # 日本語列名
+        customer_summary.columns = [
+            "顧客ID",
+            "年齢層",
+            "性別",
+            "来店頻度",
+            "注文回数",
+            "累計購入金額",
+            "平均注文金額",
+            "初回注文日",
+            "最終注文日",
+        ]
+
+        return customer_summary.sort_values("累計購入金額", ascending=False)
 
     def _export_json(self):
         """JSON形式でのエクスポート"""
@@ -559,18 +710,162 @@ class CafeDataGenerator:
 
     def _export_xlsx(self):
         """Excel形式でのエクスポート"""
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.chart import BarChart, LineChart, Reference
+        from openpyxl.utils.dataframe import dataframe_to_rows
+
         xlsx_dir = self.config["output"]["file_paths"]["xlsx_dir"]
         file_path = os.path.join(xlsx_dir, "cafe_mock_data.xlsx")
 
         with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-            self.data.customers.to_excel(writer, sheet_name="customers", index=False)
-            self.data.categories.to_excel(writer, sheet_name="categories", index=False)
-            self.data.menu_items.to_excel(writer, sheet_name="menu_items", index=False)
-            self.data.orders.to_excel(writer, sheet_name="orders", index=False)
-            self.data.order_items.to_excel(writer, sheet_name="order_items", index=False)
-            self.data.daily_summary.to_excel(writer, sheet_name="daily_summary", index=False)
+            # 1. 概要シート
+            self._create_overview_sheet(writer)
+
+            # 2. 日本語列名付きマスターデータシート
+            self._create_master_data_sheets(writer)
+
+            # 3. トランザクションデータシート
+            self._create_transaction_data_sheets(writer)
+
+            # 4. 分析用データシート
+            self._create_analysis_sheets(writer)
+
+            # 5. 集計・可視化シート
 
         logger.info(f"Excel出力完了: {file_path}")
+
+    def _create_overview_sheet(self, writer):
+        """概要シートの作成"""
+        overview_data = {
+            "項目": [
+                "データ期間",
+                "総注文数",
+                "総売上",
+                "平均注文額",
+                "顧客数",
+                "メニュー数",
+                "カテゴリ数",
+                "営業日数",
+            ],
+            "値": [
+                f"{self.start_date.strftime('%Y-%m-%d')} ～ {self.end_date.strftime('%Y-%m-%d')}",
+                len(self.data.orders),
+                f"¥{self.data.orders['total_amount'].sum():,.0f}",
+                f"¥{self.data.orders['total_amount'].mean():.0f}",
+                len(self.data.customers),
+                len(self.data.menu_items),
+                len(self.data.categories),
+                len(self.data.daily_summary),
+            ],
+        }
+
+        overview_df = pd.DataFrame(overview_data)
+        overview_df.to_excel(writer, sheet_name="概要", index=False)
+
+    def _create_master_data_sheets(self, writer):
+        """マスターデータシートの作成"""
+        # カテゴリマスター
+        categories_jp = self.data.categories.copy()
+        categories_jp.columns = ["カテゴリID", "カテゴリ名", "説明", "作成日時"]
+        categories_jp.to_excel(writer, sheet_name="カテゴリマスター", index=False)
+
+        # メニューマスター
+        menu_jp = self.data.menu_items.copy()
+        menu_jp.columns = [
+            "メニューID",
+            "カテゴリID",
+            "商品名",
+            "価格",
+            "原価",
+            "利益率",
+            "利用可能時間",
+            "人気度",
+            "季節商品フラグ",
+            "季節嗜好",
+            "季節倍率",
+            "作成日時",
+        ]
+        menu_jp.to_excel(writer, sheet_name="メニューマスター", index=False)
+
+        # 顧客マスター
+        customers_jp = self.data.customers.copy()
+        customers_jp.columns = [
+            "顧客ID",
+            "年齢",
+            "年齢層",
+            "性別",
+            "来店頻度",
+            "平均注文金額",
+            "登録日",
+            "アクティブフラグ",
+            "作成日時",
+        ]
+        customers_jp.to_excel(writer, sheet_name="顧客マスター", index=False)
+
+    def _create_transaction_data_sheets(self, writer):
+        """トランザクションデータシートの作成"""
+        # 注文データ
+        orders_jp = self.data.orders.copy()
+        orders_jp.columns = ["注文ID", "顧客ID", "注文日時", "天気", "気温", "週末フラグ", "合計金額", "作成日時"]
+        orders_jp.to_excel(writer, sheet_name="注文データ", index=False)
+
+        # 注文詳細データ
+        order_items_jp = self.data.order_items.copy()
+        order_items_jp.columns = ["注文ID", "メニューID", "数量", "単価", "小計", "作成日時"]
+        order_items_jp.to_excel(writer, sheet_name="注文詳細", index=False)
+
+    def _create_analysis_sheets(self, writer):
+        """分析用データシートの作成"""
+        # 商品別売上集計
+        item_summary = self._create_item_sales_summary()
+        item_summary.to_excel(writer, sheet_name="商品別売上分析", index=False)
+
+        # 顧客別購入履歴
+        customer_summary = self._create_customer_purchase_summary()
+        customer_summary.to_excel(writer, sheet_name="顧客別購入分析", index=False)
+
+        # 日別集計（日本語列名）
+        daily_jp = self.data.daily_summary.copy()
+        daily_jp.columns = [
+            "日付",
+            "注文数",
+            "ユニーク顧客数",
+            "売上合計",
+            "販売個数",
+            "平均気温",
+            "天気",
+            "週末フラグ",
+            "平均注文金額",
+            "平均商品数/注文",
+            "作成日時",
+        ]
+        daily_jp.to_excel(writer, sheet_name="日別売上分析", index=False)
+
+    def _create_summary_visualization_sheets(self, writer):
+        """集計・可視化シートの作成"""
+        # 月別売上集計
+        monthly_summary = self.data.daily_summary.copy()
+        monthly_summary["month"] = pd.to_datetime(monthly_summary["date"]).dt.to_period("M")
+        monthly_data = (
+            monthly_summary.groupby("month")
+            .agg({"total_sales": "sum", "total_orders": "sum", "unique_customers": "sum"})
+            .reset_index()
+        )
+
+        monthly_data.columns = ["月", "売上合計", "注文数", "顧客数"]
+        monthly_data.to_excel(writer, sheet_name="月別集計", index=False)
+
+        # カテゴリ別売上集計
+        category_summary = (
+            self.data.order_items.merge(self.data.menu_items[["menu_id", "category_id"]], on="menu_id")
+            .merge(self.data.categories[["category_id", "category_name"]], on="category_id")
+            .groupby("category_name")
+            .agg({"subtotal": "sum", "quantity": "sum"})
+            .reset_index()
+        )
+
+        category_summary.columns = ["カテゴリ名", "売上金額", "販売数量"]
+        category_summary.to_excel(writer, sheet_name="カテゴリ別集計", index=False)
 
     def _export_database(self):
         """データベースへのエクスポート"""
