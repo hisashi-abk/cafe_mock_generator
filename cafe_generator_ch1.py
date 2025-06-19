@@ -18,7 +18,6 @@ from datetime import datetime, timedelta
 import random
 import os
 import json
-import openpyxl
 
 
 class CafeDataGenerator:
@@ -76,8 +75,8 @@ class CafeDataGenerator:
         # 該当するパターンを検索
         for pattern in self.customer_patterns:
             conditions = pattern["conditions"]
-            if day_type in conditions["day_type"] and hour in conditions["hours"]:
-                return pattern()
+            if day_type in conditions["day_types"] and hour in conditions["hours"]:
+                return pattern
 
         # デフォルトパターン (平日全時間帯)
         return {
@@ -93,7 +92,7 @@ class CafeDataGenerator:
             }
         }
 
-    def generate_customer_demographics(self, pattern):
+    def _generate_customer_demographics(self, pattern):
         """顧客の性別・年代を生成"""
         demographics = pattern["demographics"]
 
@@ -176,7 +175,7 @@ class CafeDataGenerator:
 
         # 曜日係数（月曜=0, 日曜=6）
         weekday = date.weekday()
-        day_multiplier = self.config["data_generation"].get(weekday, 1.0)
+        day_multiplier = self.config["data_generation"].get(str(weekday), 1.0)
 
         # 時間帯係数
         hour_multiplier = self.config["data_generation"]["hour_multiplier"].get(hour, 1.0)
@@ -425,7 +424,7 @@ class CafeDataGenerator:
                 # メインデータ
                 df.to_excel(writer, sheet_name="売上データ", index=False)
 
-                # 各種修正データ
+                # 各種集計データ
                 daily_summary = self._create_daily_summary(df)
                 daily_summary.to_excel(writer, sheet_name="日別集計", index=False)
 
@@ -468,7 +467,7 @@ class CafeDataGenerator:
         # カラム名を整理
         product_summary.columns = ["販売回数", "平均単価", "利益合計", "平均利益"]
         product_summary = product_summary.reset_index()
-        return product_summary.product_summary.sort_values("販売回数", ascending=False)
+        return product_summary.sort_values("販売回数", ascending=False)
 
     def _create_customer_summary(self, df):
         """顧客分析データを作成"""
@@ -559,6 +558,9 @@ def main():
     except Exception as e:
         print(f"❌ エラーが発生しました: {e}")
         print("config.yamlファイルとrequirements.txtの内容を確認してください")
+        import traceback
+
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

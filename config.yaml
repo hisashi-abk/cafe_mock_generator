@@ -52,7 +52,7 @@ data_generation:
     closed_days: [3] # 木曜定休日
 
   # トラフィック設定
-  base_customers_per_hour: 8 # 1時間あたりの平均来客数
+  base_customers_per_hour: 5 # 1時間あたりの平均来客数
 
   # 曜日別係数 (月曜=0, 日曜=6)
   0: 0.8 # 月曜
