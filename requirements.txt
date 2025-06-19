@@ -11,6 +11,9 @@ PyYAML>=6.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
 
+# Excel出力対応
+openpyxl>=3.0.9
+
 # Jupyter Notebook (学習用)
 jupyter>=1.0.0
 ipykernel>=6.0.0
