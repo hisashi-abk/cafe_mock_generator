@@ -294,8 +294,8 @@ class CafeDataGenerator:
 
         # 顧客の嗜好を取得
         preferences: Dict[str, float] = self._get_customer_preferences(
-            customer_demographics["gender"],
-            customer_demographics["age_group"],
+            str(customer_demographics["gender"]),
+            str(customer_demographics["age_group"]),
         )
 
         # 人気度に基づいて重み付け選択
@@ -366,7 +366,8 @@ class CafeDataGenerator:
                         # 人気度に基づいて商品選択
                         if weights and sum(weights) > 0:
                             normalized_weights: np.ndarray = np.array(weights) / np.sum(weights)
-                            selected_item: Dict[str, Any] = np.random.choice(available_items, p=normalized_weights)
+                            selected_index: int = np.random.choice(len(available_items), p=normalized_weights)
+                            selected_item: Dict[str, Any] = available_items[selected_index]
                             customer_orders.append(selected_item)
 
                     # 注文データを記録
@@ -398,7 +399,7 @@ class CafeDataGenerator:
                                 "月": current_date.month,
                                 "季節": self._get_season(current_date.month),
                                 "性別": "男性" if customer_demographics["gender"] == "male" else "女性",
-                                "年代": self._convert_age_group_japanese(customer_demographics["age_group"]),
+                                "年代": self._convert_age_group_japanese(str(customer_demographics["age_group"])),
                                 "年齢": customer_demographics["age"],
                                 "平日休日": "平日" if current_date.weekday() < 5 else "休日",
                             }
