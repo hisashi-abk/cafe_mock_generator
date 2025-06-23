@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 import random
 import os
 import json
-from typing import Dict, List, Any, Tuple, Optional, Union
+from typing import Dict, List, Any, Tuple, Optional, Union, Hashable
 
 
 class CafeDataGenerator:
@@ -533,7 +533,7 @@ class CafeDataGenerator:
             json.dump(main_data, f, ensure_ascii=False, indent=2)
 
         # 集計データをJSON形式で保存
-        summaries: Dict[str, List[Dict[str, Any]]] = {
+        summaries: Dict[str, List[Dict[Hashable, Any]]] = {
             "daily_summary": self._create_daily_summary(df).to_dict("records"),
             "product_summary": self._create_product_summary(df).to_dict("records"),
             "customer_summary": self._create_customer_summary(df).to_dict("records"),
@@ -602,7 +602,14 @@ class CafeDataGenerator:
         )
 
         # カラム名を整理
-        daily_summary.columns = ["注文件数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"]
+        column_mapping = {
+            daily_summary.columns[0]: "注文件数",
+            daily_summary.columns[1]: "売上合計",
+            daily_summary.columns[2]: "平均単価",
+            daily_summary.columns[3]: "利益合計",
+            daily_summary.columns[4]: "ユニーク顧客数",
+        }
+        daily_summary = daily_summary.rename(columns=column_mapping)
 
         return daily_summary.reset_index()
 
@@ -611,7 +618,7 @@ class CafeDataGenerator:
         商品別集計データを作成
 
         Args:
-            df (pd.DateOffset): 元の売上データ
+            df (pd.DateFrame): 元の売上データ
 
         Returns:
             pd.DataFrame: 商品別に集計されたDataFrame
@@ -621,7 +628,7 @@ class CafeDataGenerator:
         )
 
         # カラム名を整理
-        product_summary.columns = ["販売回数", "平均単価", "利益合計", "平均利益"]
+        product_summary.columns = pd.Index(["販売回数", "平均単価", "利益合計", "平均利益"])
         product_summary = product_summary.reset_index()
         return product_summary.sort_values("販売回数", ascending=False)
 
@@ -641,7 +648,7 @@ class CafeDataGenerator:
             .round(2)
         )
 
-        customer_summary.columns = ["注文回数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"]
+        customer_summary.columns = pd.Index(["注文回数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"])
         return customer_summary.reset_index()
 
     def _create_demographic_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -649,7 +656,7 @@ class CafeDataGenerator:
         性別・年代別詳細分析
 
         Args:
-            df (pd.DataFRame): 元の売上データ
+            df (pd.DataFrame): 元の売上データ
 
         Returns:
             pd.DataFrame: 性別・年代・カテゴリ別に分析されたDataFrame
@@ -658,7 +665,7 @@ class CafeDataGenerator:
             df.groupby(["性別", "年代", "カテゴリ"]).agg({"単価": ["count", "sum"], "顧客ID": "nunique"}).round(2)
         )
 
-        analysis.columns = ["注文回数", "売上", "顧客数"]
+        analysis.columns = pd.Index(["注文回数", "売上", "顧客数"])
         return analysis.reset_index()
 
     def display_data_info(self, df: pd.DataFrame) -> None:
