@@ -48,7 +48,7 @@ data_generation:
   # 営業時間
   business_hours:
     open: 9
-    close: 18
+    close: 19
     closed_days: [3] # 木曜定休日
 
   # トラフィック設定
@@ -183,7 +183,7 @@ menu:
       is_seasonal: false
 
     - id: 203
-      name: "ランチB"
+      name: "ランチC"
       category_id: 2
       price: 950
       cost: 430

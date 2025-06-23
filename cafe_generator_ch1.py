@@ -530,18 +530,59 @@ class CafeDataGenerator:
 
         main_file: str = os.path.join(json_dir, "cafe_sales_data.json")
         with open(main_file, "w", encoding="utf-8") as f:
-            json.dump(main_data, f, ensure_ascii=False, indent=2)
+            json.dump(main_data, f, ensure_ascii=False, indent=2, default=str)
 
         # 集計データをJSON形式で保存
-        summaries: Dict[str, List[Dict[Hashable, Any]]] = {
-            "daily_summary": self._create_daily_summary(df).to_dict("records"),
-            "product_summary": self._create_product_summary(df).to_dict("records"),
-            "customer_summary": self._create_customer_summary(df).to_dict("records"),
-        }
+        try:
+            daily_summary_df = self._create_daily_summary(df)
+            product_summary_df = self._create_product_summary(df)
+            customer_summary_df = self._create_customer_summary(df)
 
-        summary_file: str = os.path.join(json_dir, "summaries.json")
-        with open(summary_file, "w", encoding="utf-8") as f:
-            json.dump(summaries, f, ensure_ascii=False, indent=2)
+            # インデックスをリセットしてタプルキーを回避
+            daily_summary_df = daily_summary_df.reset_index()
+            product_summary_df = product_summary_df.reset_index()
+            customer_summary_df = customer_summary_df.reset_index()
+
+            # 列名がタプルの場合は文字列に変換
+            daily_summary_df.columns = [str(col) if isinstance(col, tuple) else col for col in daily_summary_df.columns]
+            product_summary_df.columns = [
+                str(col) if isinstance(col, tuple) else col for col in product_summary_df.columns
+            ]
+            customer_summary_df.columns = [
+                str(col) if isinstance(col, tuple) else col for col in customer_summary_df.columns
+            ]
+
+            summaries: Dict[str, List[Dict[str, Any]]] = {
+                "daily_summary": daily_summary_df.to_dict("records"),
+                "product_summary": product_summary_df.to_dict("records"),
+                "customer_summary": customer_summary_df.to_dict("records"),
+            }
+
+            summary_file: str = os.path.join(json_dir, "summaries.json")
+            with open(summary_file, "w", encoding="utf-8") as f:
+                json.dump(summaries, f, ensure_ascii=False, indent=2, default=str)
+        except Exception as e:
+            print(f"  ⚠️ 集計データの保存中にエラーが発生: {e}")
+            # エラーが発生した場合は、より安全な方法で保存
+            summaries_safe: Dict[str, Any] = {}
+
+            try:
+                summaries_safe["daily_summary"] = self._create_daily_summary(df).to_json(
+                    orient="records", force_ascii=False
+                )
+                summaries_safe["product_summary"] = self._create_product_summary(df).to_json(
+                    orient="records", force_ascii=False
+                )
+                summaries_safe["customer_summary"] = self._create_customer_summary(df).to_json(
+                    orient="records", force_ascii=False
+                )
+
+                summary_file: str = os.path.join(json_dir, "summaries.json")
+                with open(summary_file, "w", encoding="utf-8") as f:
+                    json.dump(summaries_safe, f, ensure_ascii=False, indent=2)
+
+            except Exception as e2:
+                print(f"  ❌ 集計データの代替保存も失敗: {e2}")
 
         print(f"  ✅ JSON保存完了: {json_dir}")
 
