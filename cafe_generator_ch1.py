@@ -605,7 +605,7 @@ class CafeDataGenerator:
 
         return daily_summary.reset_index()
 
-    def _create_product_summary(self, df: pd.DateOffset) -> pd.DataFrame:
+    def _create_product_summary(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         商品別集計データを作成
 
@@ -643,7 +643,7 @@ class CafeDataGenerator:
         customer_summary.columns = ["注文回数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"]
         return customer_summary.reset_index()
 
-    def _create_demographic_analysis(self, df: pd.DataFRame) -> pd.DataFrame:
+    def _create_demographic_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         性別・年代別詳細分析
 
