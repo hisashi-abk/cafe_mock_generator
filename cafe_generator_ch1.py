@@ -473,51 +473,39 @@ class CafeDataGenerator:
         print(f"  📁 保存先: {output_dir}")
         print(f"  📄 形式: CSV, JSON, XLSX")
 
-    def _save_csv(self, df: pd.DataFrame, output_dir: str) -> None:
-        """
-        CSV形式で保存
-
-        Args:
-            df (pd.DataFrame): 保存するDataFrame
-            output_dir (str): 出力ディレクトリ
-        """
-        csv_dir: str = os.path.join(output_dir, "csv")
+    def _save_csv(self, df, output_dir):
+        """CSV形式で保存"""
+        csv_dir = os.path.join(output_dir, "csv")
         os.makedirs(csv_dir, exist_ok=True)
 
         # メイン売上データ
-        main_file: str = os.path.join(csv_dir, "cafe_sales_data.csv")
+        main_file = os.path.join(csv_dir, "cafe_sales_data.csv")
         df.to_csv(main_file, index=False, encoding="utf-8")
 
         # 日別集計データ
-        daily_summary: pd.DataFrame = self._create_daily_summary(df)
-        daily_file: str = os.path.join(csv_dir, "daily_summary.csv")
+        daily_summary = self._create_daily_summary(df)
+        daily_file = os.path.join(csv_dir, "daily_summary.csv")
         daily_summary.to_csv(daily_file, index=False, encoding="utf-8")
 
         # 商品別集計データ
-        product_summary: pd.DataFrame = self._create_product_summary(df)
-        product_file: str = os.path.join(csv_dir, "product_summary.csv")
+        product_summary = self._create_product_summary(df)
+        product_file = os.path.join(csv_dir, "product_summary.csv")
         product_summary.to_csv(product_file, index=False, encoding="utf-8")
 
         # 顧客分析データ
-        customer_summary: pd.DataFrame = self._create_customer_summary(df)
-        customer_file: str = os.path.join(csv_dir, "customer_summary.csv")
+        customer_summary = self._create_customer_summary(df)
+        customer_file = os.path.join(csv_dir, "customer_summary.csv")
         customer_summary.to_csv(customer_file, index=False, encoding="utf-8")
 
         print(f"  ✅ CSV保存完了: {csv_dir}")
 
-    def _save_json(self, df: pd.DataFrame, output_dir: str) -> None:
-        """
-        JSON形式で保存
-
-        Args:
-            df (pd.DataFrame): 保存するDataFRame
-            output_dir (str): 出力ディレクトリ
-        """
-        json_dir: str = os.path.join(output_dir, "json")
+    def _save_json(self, df, output_dir):
+        """JSON形式で保存"""
+        json_dir = os.path.join(output_dir, "json")
         os.makedirs(json_dir, exist_ok=True)
 
         # メインデータをJSONに変換
-        main_data: Dict[str, Any] = {
+        main_data = {
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
                 "total_records": len(df),
@@ -528,95 +516,48 @@ class CafeDataGenerator:
             "sales_data": df.to_dict("records"),
         }
 
-        main_file: str = os.path.join(json_dir, "cafe_sales_data.json")
+        main_file = os.path.join(json_dir, "cafe_sales_data.json")
         with open(main_file, "w", encoding="utf-8") as f:
             json.dump(main_data, f, ensure_ascii=False, indent=2, default=str)
 
         # 集計データをJSON形式で保存
-        try:
-            daily_summary_df = self._create_daily_summary(df)
-            product_summary_df = self._create_product_summary(df)
-            customer_summary_df = self._create_customer_summary(df)
+        summaries = {
+            "daily_summary": self._create_daily_summary(df).to_dict("records"),
+            "product_summary": self._create_product_summary(df).to_dict("records"),
+            "customer_summary": self._create_customer_summary(df).to_dict("records"),
+        }
 
-            # インデックスをリセットしてタプルキーを回避
-            daily_summary_df = daily_summary_df.reset_index()
-            product_summary_df = product_summary_df.reset_index()
-            customer_summary_df = customer_summary_df.reset_index()
-
-            # 列名がタプルの場合は文字列に変換
-            daily_summary_df.columns = [str(col) if isinstance(col, tuple) else col for col in daily_summary_df.columns]
-            product_summary_df.columns = [
-                str(col) if isinstance(col, tuple) else col for col in product_summary_df.columns
-            ]
-            customer_summary_df.columns = [
-                str(col) if isinstance(col, tuple) else col for col in customer_summary_df.columns
-            ]
-
-            summaries: Dict[str, List[Dict[str, Any]]] = {
-                "daily_summary": daily_summary_df.to_dict("records"),
-                "product_summary": product_summary_df.to_dict("records"),
-                "customer_summary": customer_summary_df.to_dict("records"),
-            }
-
-            summary_file: str = os.path.join(json_dir, "summaries.json")
-            with open(summary_file, "w", encoding="utf-8") as f:
-                json.dump(summaries, f, ensure_ascii=False, indent=2, default=str)
-        except Exception as e:
-            print(f"  ⚠️ 集計データの保存中にエラーが発生: {e}")
-            # エラーが発生した場合は、より安全な方法で保存
-            summaries_safe: Dict[str, Any] = {}
-
-            try:
-                summaries_safe["daily_summary"] = self._create_daily_summary(df).to_json(
-                    orient="records", force_ascii=False
-                )
-                summaries_safe["product_summary"] = self._create_product_summary(df).to_json(
-                    orient="records", force_ascii=False
-                )
-                summaries_safe["customer_summary"] = self._create_customer_summary(df).to_json(
-                    orient="records", force_ascii=False
-                )
-
-                summary_file: str = os.path.join(json_dir, "summaries.json")
-                with open(summary_file, "w", encoding="utf-8") as f:
-                    json.dump(summaries_safe, f, ensure_ascii=False, indent=2)
-
-            except Exception as e2:
-                print(f"  ❌ 集計データの代替保存も失敗: {e2}")
+        summary_file = os.path.join(json_dir, "summaries.json")
+        with open(summary_file, "w", encoding="utf-8") as f:
+            json.dump(summaries, f, ensure_ascii=False, indent=2)
 
         print(f"  ✅ JSON保存完了: {json_dir}")
 
-    def _save_xlsx(self, df: pd.DataFrame, output_dir: str) -> None:
-        """
-        Excel形式で保存
-
-        Args:
-            df (pd.DataFrame): 保存するDataFrame
-            output_dir (str): 出力ディレクトリ
-        """
+    def _save_xlsx(self, df, output_dir):
+        """Excel形式で保存"""
         try:
-            xlsx_dir: str = os.path.join(output_dir, "xlsx")
+            xlsx_dir = os.path.join(output_dir, "xlsx")
             os.makedirs(xlsx_dir, exist_ok=True)
 
             # 複数シートを持つExcelファイルを作成
-            excel_file: str = os.path.join(xlsx_dir, "cafe_sales_analysis.xlsx")
+            excel_file = os.path.join(xlsx_dir, "cafe_sales_analysis.xlsx")
 
             with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
                 # メインデータ
                 df.to_excel(writer, sheet_name="売上データ", index=False)
 
                 # 各種集計データ
-                daily_summary: pd.DataFrame = self._create_daily_summary(df)
+                daily_summary = self._create_daily_summary(df)
                 daily_summary.to_excel(writer, sheet_name="日別集計", index=False)
 
-                product_summary: pd.DataFrame = self._create_product_summary(df)
+                product_summary = self._create_product_summary(df)
                 product_summary.to_excel(writer, sheet_name="商品別集計", index=False)
 
-                customer_summary: pd.DataFrame = self._create_customer_summary(df)
+                customer_summary = self._create_customer_summary(df)
                 customer_summary.to_excel(writer, sheet_name="顧客分析", index=False)
 
                 # 性別・年代別分析
-                demographic_analysis: pd.DataFrame = self._create_demographic_analysis(df)
+                demographic_analysis = self._create_demographic_analysis(df)
                 demographic_analysis.to_excel(writer, sheet_name="性別年代分析", index=False)
 
             print(f"  ✅ XLSX保存完了: {xlsx_dir}")
