@@ -473,8 +473,14 @@ class CafeDataGenerator:
         print(f"  📁 保存先: {output_dir}")
         print(f"  📄 形式: CSV, JSON, XLSX")
 
-    def _save_csv(self, df, output_dir):
-        """CSV形式で保存"""
+    def _save_csv(self, df: pd.DataFrame, output_dir: str) -> None:
+        """
+        CSV形式で保存
+
+        Args:
+            df (pd.DataFrame): 保存するDataFrame
+            output_dir (str): 出力ディレクトリ
+        """
         csv_dir = os.path.join(output_dir, "csv")
         os.makedirs(csv_dir, exist_ok=True)
 
@@ -499,8 +505,14 @@ class CafeDataGenerator:
 
         print(f"  ✅ CSV保存完了: {csv_dir}")
 
-    def _save_json(self, df, output_dir):
-        """JSON形式で保存"""
+    def _save_json(self, df: pd.DataFrame, output_dir: str) -> None:
+        """
+        JSON形式で保存
+
+        Args:
+            df (pd.DataFrame): 保存するDataFrame
+            output_dir (str): 出力ディレクトリ
+        """
         json_dir = os.path.join(output_dir, "json")
         os.makedirs(json_dir, exist_ok=True)
 
@@ -529,12 +541,18 @@ class CafeDataGenerator:
 
         summary_file = os.path.join(json_dir, "summaries.json")
         with open(summary_file, "w", encoding="utf-8") as f:
-            json.dump(summaries, f, ensure_ascii=False, indent=2)
+            json.dump(summaries, f, ensure_ascii=False, indent=2, default=str)
 
         print(f"  ✅ JSON保存完了: {json_dir}")
 
-    def _save_xlsx(self, df, output_dir):
-        """Excel形式で保存"""
+    def _save_xlsx(self, df: pd.DataFrame, output_dir: str) -> None:
+        """
+        Excel形式で保存
+
+        Args:
+            df (pd.DataFrame): 保存するDataFrame
+            output_dir (str): 出力ディレクトリ
+        """
         try:
             xlsx_dir = os.path.join(output_dir, "xlsx")
             os.makedirs(xlsx_dir, exist_ok=True)
@@ -577,23 +595,47 @@ class CafeDataGenerator:
         Returns:
             pd.DataFrame: 日別に集計されたDataFrame
         """
-        daily_summary = (
-            df.groupby(["日付", "曜日", "天気", "季節", "平日休日"])
-            .agg({"単価": ["count", "sum", "mean"], "利益": "sum", "顧客ID": "nunique"})
-            .round(2)
-        )
+        try:
+            daily_summary = (
+                df.groupby(["日付", "曜日", "天気", "季節", "平日休日"])
+                .agg(
+                    {
+                        "単価": ["count", "sum", "mean"],
+                        "利益": "sum",
+                        "顧客ID": "nunique",
+                    }
+                )
+                .round(2)
+            )
 
-        # カラム名を整理
-        column_mapping = {
-            daily_summary.columns[0]: "注文件数",
-            daily_summary.columns[1]: "売上合計",
-            daily_summary.columns[2]: "平均単価",
-            daily_summary.columns[3]: "利益合計",
-            daily_summary.columns[4]: "ユニーク顧客数",
-        }
-        daily_summary = daily_summary.rename(columns=column_mapping)
+            # カラム名を平坦化
+            daily_summary.columns = pd.Index(
+                [
+                    "注文件数",
+                    "売上合計",
+                    "平均単価",
+                    "利益合計",
+                    "ユニーク顧客数",
+                ]
+            )
 
-        return daily_summary.reset_index()
+            return daily_summary.reset_index()
+
+        except Exception as e:
+            print(f"日別集計作成エラー: {e}")
+            # エラー時は基本的な集計を返す
+            fallback = (
+                df.groupby("日付")
+                .agg(
+                    {
+                        "単価": ["count", "sum"],
+                        "利益": "sum",
+                    }
+                )
+                .round(2)
+            )
+            fallback.columns = pd.Index(["注文件数", "売上合計", "利益合計"])
+            return fallback.reset_index()
 
     def _create_product_summary(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -605,14 +647,30 @@ class CafeDataGenerator:
         Returns:
             pd.DataFrame: 商品別に集計されたDataFrame
         """
-        product_summary = (
-            df.groupby(["商品名", "カテゴリ"]).agg({"単価": ["count", "mean"], "利益": ["sum", "mean"]}).round(2)
-        )
+        try:
+            product_summary = (
+                df.groupby(["商品名", "カテゴリ"])
+                .agg(
+                    {
+                        "単価": ["count", "mean"],
+                        "利益": ["sum", "mean"],
+                    }
+                )
+                .round(2)
+            )
 
-        # カラム名を整理
-        product_summary.columns = pd.Index(["販売回数", "平均単価", "利益合計", "平均利益"])
-        product_summary = product_summary.reset_index()
-        return product_summary.sort_values("販売回数", ascending=False)
+            # カラム名の平坦化
+            product_summary.columns = pd.Index(["販売回数", "平均単価", "利益合計", "平均利益"])
+            product_summary = product_summary.reset_index()
+
+            return product_summary.sort_values("販売回数", ascending=False)
+
+        except Exception as e:
+            print(f"商品集計作成エラー: {e}")
+            # エラー時は基本的な集計を返す
+            fallback = df.groupby("商品名").agg({"単価": ["count", "sum"]}).round(2)
+            fallback.columns = pd.Index(["販売回数", "売上合計"])
+            return fallback.reset_index()
 
     def _create_customer_summary(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -624,14 +682,29 @@ class CafeDataGenerator:
         Returns:
             pd.DataFrame: 顧客属性別に集計されたDataFrame
         """
-        customer_summary = (
-            df.groupby(["性別", "年代"])
-            .agg({"単価": ["count", "sum", "mean"], "利益": "sum", "顧客ID": "nunique"})
-            .round(2)
-        )
+        try:
+            customer_summary = (
+                df.groupby(["性別", "年代"])
+                .agg(
+                    {
+                        "単価": ["count", "sum", "mean"],
+                        "利益": "sum",
+                        "顧客ID": "nunique",
+                    }
+                )
+                .round(2)
+            )
 
-        customer_summary.columns = pd.Index(["注文回数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"])
-        return customer_summary.reset_index()
+            customer_summary.columns = pd.Index(["注文回数", "売上合計", "平均単価", "利益合計", "ユニーク顧客数"])
+
+            return customer_summary.reset_index()
+
+        except Exception as e:
+            print(f"顧客分析作成エラー: {e}")
+            # エラー時は基本的な集計を返す
+            fallback = df.groupby("性別").agg({"単価": ["count", "sum"]}).round(2)
+            fallback.columns = pd.Index(["注文回数", "売上合計"])
+            return fallback.reset_index()
 
     def _create_demographic_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -643,12 +716,29 @@ class CafeDataGenerator:
         Returns:
             pd.DataFrame: 性別・年代・カテゴリ別に分析されたDataFrame
         """
-        analysis = (
-            df.groupby(["性別", "年代", "カテゴリ"]).agg({"単価": ["count", "sum"], "顧客ID": "nunique"}).round(2)
-        )
+        try:
+            analysis = (
+                df.groupby(["性別", "年代", "カテゴリ"])
+                .agg(
+                    {
+                        "単価": ["count", "sum"],
+                        "顧客ID": "nunique",
+                    }
+                )
+                .round(2)
+            )
 
-        analysis.columns = pd.Index(["注文回数", "売上", "顧客数"])
-        return analysis.reset_index()
+            # カラム名を平坦化
+            analysis.columns = pd.Index(["注文回数", "売上", "顧客数"])
+
+            return analysis.reset_index()
+
+        except Exception as e:
+            print(f"性別年代分析作成エラー: {e}")
+            # エラー時は基本的な集計を返す
+            fallback = df.groupby(["性別", "カテゴリ"]).agg({"単価": "count"}).round(2)
+            fallback.columns = pd.Index(["注文回数"])
+            return fallback.reset_index()
 
     def display_data_info(self, df: pd.DataFrame) -> None:
         """
